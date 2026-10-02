@@ -111,3 +111,10 @@ netsec-defensive/
 ├── 05-seguridad/
 └── recursos/
 ```
+
+## 🚀 Posibles mejoras
+
+- Centralización de usuarios mediante **LDAP/FreeIPA** para compartir el mismo directorio entre `Debian-CLI` y futuras VMs.
+- Incorporación de una VM **Windows** para practicar interoperabilidad Linux/Windows y administración mixta.
+- Incorporación de **Ansible** para automatizar tareas de administración sobre las VMs.
+- Auditoría de hardening con **Lynis**.
