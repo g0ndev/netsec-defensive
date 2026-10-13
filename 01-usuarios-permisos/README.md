@@ -7,6 +7,7 @@
 - Asignación de `admin1` al grupo `sudo`.
 - Creación de una estructura de carpetas en `/srv/` con una carpeta privada por departamento y una carpeta compartida general.
 - Configuración de permisos (`chown`, `chmod`) y del bit `setgid` en las carpetas de grupo.
+- Configuración de umask global (`027`) para restringir los permisos por defecto de archivos nuevos.
 - Configuración de una regla ACL para un caso de acceso cruzado entre departamentos.
 
 ## Por qué
@@ -38,6 +39,7 @@ Simular cómo una organización chica administra el acceso a sus recursos: cada 
 - Carpetas creadas en `/srv/`, con dueño y grupo asignados vía `chown`.
 - Permisos base con `chmod`, incluyendo `setgid` (`chmod g+s`) para que los archivos nuevos hereden el grupo del directorio.
 - `admin1` agregado al grupo `sudo` con `usermod -aG sudo`.
+- Umask global configurado en `/etc/profile.d/10-umask.sh` (`umask 027`), aplicado a todos los usuarios del sistema: archivos nuevos quedan con permisos `rw-r-----` por defecto (sin acceso para "otros").
 - Caso de acceso cruzado resuelto con ACL: `ventas1` necesita leer `/srv/desarrollo` sin pertenecer al grupo `dev` → `setfacl -m u:ventas1:rx /srv/desarrollo`.
 
 ## Verificación
@@ -54,47 +56,53 @@ Simular cómo una organización chica administra el acceso a sus recursos: cada 
 
 ![Estructura de /srv con dueños, grupos y permisos](evidencia/03-estructura-srv-permisos.png)
 
-**4. Acceso permitido (grupo propio)**
+**4. Umask aplicado**
+
+Verificación de que el umask global (`027`) se aplica correctamente a los usuarios del escenario: los archivos nuevos quedan sin permisos para "otros".
+
+![Umask aplicado para nuevos archivos](evidencia/04-umask-aplicado.png)
+
+**5. Acceso permitido (grupo propio)**
 
 `dev1` accede a `/srv/desarrollo` y puede escribir en su carpeta de departamento.
 
-![Acceso permitido de dev1 a desarrollo](evidencia/04-acceso-permitido-dev.png)
+![Acceso permitido de dev1 a desarrollo](evidencia/05-acceso-permitido-dev.png)
 
-**5. Acceso denegado (otro grupo)**
+**6. Acceso denegado (otro grupo)**
 
 `dev1` intenta acceder a `/srv/rrhh`, carpeta de otro departamento al que no pertenece.
 
-![Acceso denegado de dev1 a rrhh](evidencia/05-acceso-denegado-rrhh.png)
+![Acceso denegado de dev1 a rrhh](evidencia/06-acceso-denegado-rrhh.png)
 
-**6. Regla ACL aplicada**
+**7. Regla ACL aplicada**
 
 `ventas1` no pertenece al grupo `dev`, pero necesita leer `/srv/desarrollo`. Se le otorga acceso puntual mediante ACL, verificado con `getfacl`.
 
-![Regla ACL en /srv/desarrollo](evidencia/06-acl-desarrollo-getfacl.png)
+![Regla ACL en /srv/desarrollo](evidencia/07-acl-desarrollo-getfacl.png)
 
-**7. Acceso vía ACL**
+**8. Acceso vía ACL**
 
 `ventas1` puede leer el contenido de `/srv/desarrollo`, pero no escribir, de acuerdo a los permisos otorgados por la ACL (`rx`).
 
-![ventas1 accede a desarrollo mediante ACL](evidencia/07-acl-ventas-acceso-desarrollo.png)
+![ventas1 accede a desarrollo mediante ACL](evidencia/08-acl-ventas-acceso-desarrollo.png)
 
-**8. Sudo: permitido y denegado**
+**9. Sudo: permitido y denegado**
 
 `admin1` puede ejecutar comandos con `sudo`; el resto de los usuarios no tiene ese privilegio.
 
-![sudo con admin1 vs. dev1](evidencia/08-sudo-admin-vs-dev.png)
+![sudo con admin1 vs. dev1](evidencia/09-sudo-admin-vs-dev.png)
 
-**9. Carpeta compartida**
+**10. Carpeta compartida**
 
 `dev1` y `ventas1`, de distinto grupo primario, acceden y escriben en `/srv/compartido` gracias al grupo secundario `empresa`. El bit `setgid` asegura que ambos archivos queden con grupo `empresa`, sin importar quién los creó.
 
-![Archivos de distintos usuarios en /srv/compartido](evidencia/09-compartido-acceso-multigrupo.png)
+![Archivos de distintos usuarios en /srv/compartido](evidencia/10-compartido-acceso-multigrupo.png)
 
-**10. RRHH sin acceso al compartido**
+**11. RRHH sin acceso al compartido**
 
 A diferencia del resto de los departamentos, `rrhh1` no pertenece al grupo `empresa`, por lo que no tiene acceso a `/srv/compartido`.
 
-![rrhh1 sin acceso a /srv/compartido](evidencia/10-rrhh-sin-acceso-compartido.png)
+![rrhh1 sin acceso a /srv/compartido](evidencia/11-rrhh-sin-acceso-compartido.png)
 
 ## Resultado
 
